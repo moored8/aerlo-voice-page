@@ -1,49 +1,302 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Aerlo Exec – Voice Interview</title>
 </head>
-<body style="font-family:system-ui;max-width:900px;margin:40px auto;padding:0 16px;">
-  <h1>Aerlo Exec – Voice Interview</h1>
-  <button id="start" style="font-size:18px;padding:12px 18px;">Start</button>
-  <textarea id="out" style="width:100%;min-height:280px;margin-top:20px;"></textarea>
+
+<body style="margin:0;background:#f6f7fb;">
+  <main style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:48px auto;padding:0 18px;">
+    <section style="background:#fff;border-radius:16px;box-shadow:0 14px 40px rgba(0,0,0,0.08);padding:34px;">
+      <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:24px;">
+        <div>
+          <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b7280;margin-bottom:10px;">
+            Aerlo Exec
+          </div>
+          <h1 style="font-size:34px;line-height:1.15;margin:0 0 10px 0;color:#0b1220;">
+            Voice Interview
+          </h1>
+          <p style="margin:0;color:#4b5563;max-width:640px;font-size:16px;line-height:1.5;">
+            A guided voice interview that produces a single copy-paste system prompt at the end.
+          </p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;min-width:240px;">
+          <button id="start" style="
+            width:100%;
+            font-size:16px;
+            padding:12px 14px;
+            background:#111827;
+            color:#fff;
+            border:0;
+            border-radius:12px;
+            cursor:pointer;
+            font-weight:600;
+          ">Start Interview</button>
+
+          <button id="stop" style="
+            width:100%;
+            font-size:16px;
+            padding:12px 14px;
+            background:#f3f4f6;
+            color:#111827;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            cursor:pointer;
+            font-weight:600;
+          " disabled>Stop</button>
+
+          <div id="pill" style="
+            display:flex;align-items:center;gap:10px;
+            padding:10px 12px;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            color:#111827;
+            background:#fff;
+            font-size:14px;
+          ">
+            <span id="dot" style="width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block;"></span>
+            <span id="stateText">Ready</span>
+          </div>
+        </div>
+      </header>
+
+      <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:18px;align-items:start;">
+        <div style="border:1px solid #e5e7eb;border-radius:14px;padding:16px;background:#fbfbfd;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#111827;">Live transcript</div>
+            <div style="color:#6b7280;font-size:13px;">What you say + what Aerlo says</div>
+          </div>
+
+          <div id="log" style="
+            height:240px;
+            overflow:auto;
+            border-radius:12px;
+            background:#ffffff;
+            border:1px solid #eef0f4;
+            padding:12px;
+            font-size:14px;
+            line-height:1.45;
+            color:#111827;
+            white-space:pre-wrap;
+          "></div>
+
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div style="font-size:13px;color:#6b7280;">Tip:</div>
+            <div style="font-size:13px;color:#111827;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;">
+              Use Chrome desktop + allow microphone.
+            </div>
+            <div style="font-size:13px;color:#111827;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;">
+              If it’s silent, click Start again.
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #e5e7eb;border-radius:14px;padding:16px;background:#fbfbfd;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="font-weight:700;color:#111827;">Your System Prompt</div>
+            <button id="copy" style="
+              font-size:14px;
+              padding:8px 10px;
+              border-radius:10px;
+              border:1px solid #e5e7eb;
+              background:#fff;
+              cursor:pointer;
+              font-weight:600;
+              color:#111827;
+            " disabled>Copy</button>
+          </div>
+
+          <textarea id="out" style="
+            width:100%;
+            min-height:292px;
+            resize:vertical;
+            border-radius:12px;
+            border:1px solid #eef0f4;
+            background:#ffffff;
+            padding:12px;
+            font-size:13px;
+            line-height:1.5;
+            color:#111827;
+            font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+          " placeholder="The final system prompt will appear here."></textarea>
+
+          <div id="hint" style="margin-top:10px;color:#6b7280;font-size:13px;line-height:1.4;">
+            When ready, paste this into ChatGPT → Settings → Personalization → Instructions.
+          </div>
+        </div>
+      </div>
+
+      <footer style="margin-top:18px;color:#9ca3af;font-size:12px;">
+        Aerlo Exec MVP • Voice interview + prompt output
+      </footer>
+    </section>
+  </main>
 
 <script>
-document.getElementById("start").onclick = async () => {
-  const pc = new RTCPeerConnection();
+  // ====== CONFIG ======
+  // If you're using OpenAI Realtime via your /api/realtime endpoint, this file will work as-is.
+  // It expects /api/realtime to accept SDP POST and return SDP answer.
+  const ENDPOINT = "/api/realtime";
 
-  const audio = document.createElement("audio");
-  audio.autoplay = true;
-  pc.ontrack = e => (audio.srcObject = e.streams[0]);
+  // ====== UI helpers ======
+  const startBtn = document.getElementById("start");
+  const stopBtn  = document.getElementById("stop");
+  const copyBtn  = document.getElementById("copy");
+  const outEl    = document.getElementById("out");
+  const logEl    = document.getElementById("log");
+  const dotEl    = document.getElementById("dot");
+  const stateEl  = document.getElementById("stateText");
 
-  const dc = pc.createDataChannel("events");
-  dc.onmessage = e => {
+  function setState(label, dotColor) {
+    stateEl.textContent = label;
+    dotEl.style.background = dotColor;
+  }
+
+  function appendLog(who, text) {
+    const line = `${who}: ${text}\n`;
+    logEl.textContent += line;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  async function copyOutput() {
     try {
-      const msg = JSON.parse(e.data);
-      if (msg.type === "response.output_text") {
-        document.getElementById("out").value += msg.text + "\n";
+      await navigator.clipboard.writeText(outEl.value || "");
+      copyBtn.textContent = "Copied";
+      setTimeout(() => copyBtn.textContent = "Copy", 900);
+    } catch {
+      copyBtn.textContent = "Copy failed";
+      setTimeout(() => copyBtn.textContent = "Copy", 900);
+    }
+  }
+  copyBtn.onclick = copyOutput;
+
+  // ====== Realtime WebRTC client ======
+  let pc = null;
+  let dc = null;
+  let micStream = null;
+
+  function safeClose() {
+    try { dc && dc.close(); } catch {}
+    try { pc && pc.close(); } catch {}
+    try { micStream && micStream.getTracks().forEach(t => t.stop()); } catch {}
+    pc = null; dc = null; micStream = null;
+  }
+
+  async function waitForIceComplete(peer) {
+    await new Promise((resolve) => {
+      if (peer.iceGatheringState === "complete") return resolve();
+      const onState = () => {
+        if (peer.iceGatheringState === "complete") {
+          peer.removeEventListener("icegatheringstatechange", onState);
+          resolve();
+        }
+      };
+      peer.addEventListener("icegatheringstatechange", onState);
+    });
+  }
+
+  async function start() {
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    copyBtn.disabled = true;
+    outEl.value = "";
+    logEl.textContent = "";
+    setState("Requesting microphone…", "#f59e0b");
+
+    pc = new RTCPeerConnection();
+
+    const audio = document.createElement("audio");
+    audio.autoplay = true;
+    pc.ontrack = (e) => { audio.srcObject = e.streams[0]; };
+
+    dc = pc.createDataChannel("events");
+    dc.onopen = () => {
+      setState("Connected", "#22c55e");
+      appendLog("Aerlo", "Connected. Starting interview…");
+    };
+    dc.onclose = () => setState("Disconnected", "#9ca3af");
+    dc.onmessage = (e) => {
+      // Best-effort parsing of event payloads (varies by backend implementation).
+      try {
+        const msg = JSON.parse(e.data);
+
+        // Common text outputs:
+        if (msg.type === "response.output_text" && msg.text) {
+          appendLog("Aerlo", msg.text);
+          if (msg.text.includes("YOUR SYSTEM PROMPT")) {
+            outEl.value += msg.text + "\n";
+            copyBtn.disabled = false;
+          }
+          return;
+        }
+
+        // Some backends send incremental text deltas:
+        if (msg.type === "response.text.delta" && msg.delta) {
+          appendLog("Aerlo", msg.delta);
+          return;
+        }
+
+        // Some backends send transcript events:
+        if (msg.type === "conversation.item.input_audio_transcription.completed" && msg.transcript) {
+          appendLog("You", msg.transcript);
+          return;
+        }
+
+        // If your backend sends final prompt as a dedicated event:
+        if (msg.type === "final.prompt" && msg.prompt) {
+          outEl.value = msg.prompt;
+          copyBtn.disabled = false;
+          appendLog("Aerlo", "System prompt generated.");
+          return;
+        }
+      } catch {
+        // ignore non-JSON
       }
-    } catch {}
-  };
+    };
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    // mic
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    micStream.getTracks().forEach((t) => pc.addTrack(t, micStream));
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
+    setState("Connecting…", "#3b82f6");
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitForIceComplete(pc);
 
-  const r = await fetch("/api/realtime", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sdp: offer.sdp })
+    // Send SDP to backend
+    const resp = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/sdp" },
+      body: pc.localDescription.sdp
+    });
+
+    const answerSdp = await resp.text();
+    await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+
+    // If your backend expects an explicit "begin" message, uncomment:
+    // dc.onopen = () => dc.send(JSON.stringify({ type: "begin" }));
+  }
+
+  async function stop() {
+    setState("Stopped", "#9ca3af");
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    safeClose();
+  }
+
+  startBtn.onclick = () => start().catch((err) => {
+    appendLog("Error", String(err?.message || err));
+    setState("Error", "#ef4444");
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    safeClose();
   });
 
-  const answer = await r.text();
-  await pc.setRemoteDescription({ type: "answer", sdp: answer });
-};
+  stopBtn.onclick = () => stop();
 </script>
+
 </body>
 </html>
 
