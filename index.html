@@ -1,124 +1,49 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Aerlo Exec – Voice Interview</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-
-<body style="font-family:system-ui,Arial;max-width:900px;margin:40px auto;padding:0 16px;">
-
-<h1>Aerlo Exec – Voice Interview</h1>
-<p>Click start. Allow microphone access. Answer by voice.</p>
-
-<button id="start" style="font-size:18px;padding:12px 18px;">
-  Start Voice Interview
-</button>
-
-<h3>Status</h3>
-<div id="status"></div>
-
-<h3>Your System Prompt</h3>
-<textarea id="output" style="width:100%;min-height:300px;"></textarea>
+<body style="font-family:system-ui;max-width:900px;margin:40px auto;padding:0 16px;">
+  <h1>Aerlo Exec – Voice Interview</h1>
+  <button id="start" style="font-size:18px;padding:12px 18px;">Start</button>
+  <textarea id="out" style="width:100%;min-height:280px;margin-top:20px;"></textarea>
 
 <script>
-/* -------------------- QUESTIONS -------------------- */
-const questions = [
-  "What should I call you?",
-  "What industry do you work in?",
-  "What is your experience level with AI: casual, business, or advanced?",
-  "What is your role at your company?",
-  "Do you have direct reports? If yes, how many?",
-  "What is the domain for your business?",
-  "Are you more of an individual contributor or part of a team dynamic?",
-  "What is your preferred communication method with your team?",
-  "What is one part of your job you wish you didn’t have to do?",
-  "Do you currently have an assistant?",
-  "What tone do you prefer when working with me?",
-  "Should I help with personal reminders like birthdays?",
-  "Are you a stakeholder in any other companies?",
-  "Would you like email or calendar integration?",
-  "Do you use a CRM?"
-];
+document.getElementById("start").onclick = async () => {
+  const pc = new RTCPeerConnection();
 
-/* -------------------- STATE -------------------- */
-let index = 0;
-const answers = [];
+  const audio = document.createElement("audio");
+  audio.autoplay = true;
+  pc.ontrack = e => (audio.srcObject = e.streams[0]);
 
-const statusEl = document.getElementById("status");
-const outputEl = document.getElementById("output");
+  const dc = pc.createDataChannel("events");
+  dc.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "response.output_text") {
+        document.getElementById("out").value += msg.text + "\n";
+      }
+    } catch {}
+  };
 
-/* -------------------- VOICE SETUP -------------------- */
-const SpeechRecognition =
-  window.SpeechRecognition || window.webkitSpeechRecognition;
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach(t => pc.addTrack(t, stream));
 
-if (!SpeechRecognition) {
-  statusEl.textContent = "Speech recognition not supported. Use Chrome desktop.";
-}
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
 
-function speak(text) {
-  return new Promise(resolve => {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = "en-US";
-    utter.onend = resolve;
-    speechSynthesis.speak(utter);
-  });
-}
-
-function listen() {
-  return new Promise(resolve => {
-    const rec = new SpeechRecognition();
-    rec.lang = "en-US";
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-
-    rec.onresult = e => resolve(e.results[0][0].transcript);
-    rec.onerror = () => resolve("");
-    rec.start();
-  });
-}
-
-/* -------------------- INTERVIEW FLOW -------------------- */
-async function startInterview() {
-  statusEl.textContent = "Interview started. Please allow microphone.";
-  await speak("Welcome to Aerlo Exec. Let's get started.");
-
-  while (index < questions.length) {
-    const q = questions[index];
-    statusEl.textContent = q;
-    await speak(q);
-    const answer = await listen();
-    answers.push(answer);
-    index++;
-
-    if (index % 3 === 0 && index < questions.length) {
-      await speak("Checkpoint saved. Continuing.");
-    }
-  }
-
-  buildPrompt();
-}
-
-function buildPrompt() {
-  let prompt = "YOUR SYSTEM PROMPT\n\n";
-
-  questions.forEach((q, i) => {
-    prompt += q + "\n" + (answers[i] || "") + "\n\n";
+  const r = await fetch("/api/realtime", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sdp: offer.sdp })
   });
 
-  outputEl.value = prompt;
-  statusEl.textContent = "Interview complete.";
-  speak("Your system prompt is ready.");
-}
-
-/* -------------------- START BUTTON -------------------- */
-document.getElementById("start").onclick = startInterview;
+  const answer = await r.text();
+  await pc.setRemoteDescription({ type: "answer", sdp: answer });
+};
 </script>
-
-</body>
-</html>
-
-
 </body>
 </html>
 
