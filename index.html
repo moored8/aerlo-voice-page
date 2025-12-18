@@ -2,48 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Aerlo Exec Voice Interview</title>
+  <title>Aerlo Exec – Voice Interview</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-<body style="font-family:system-ui;max-width:900px;margin:40px auto;padding:0 16px;">
 
-  <h1>Aerlo Exec – Voice Interview</h1>
-  <p>Click start to begin the voice interview.</p>
+<body style="font-family:system-ui,Arial;max-width:900px;margin:40px auto;padding:0 16px;">
 
-  <button id="start" style="font-size:18px;padding:12px 18px;">
-    Start Voice Interview
-  </button>
+<h1>Aerlo Exec – Voice Interview</h1>
+<p>Click start. Allow microphone access. Answer by voice.</p>
 
-  <div id="status" style="margin-top:20px;font-weight:600;"></div>
+<button id="start" style="font-size:18px;padding:12px 18px;">
+  Start Voice Interview
+</button>
 
-  <script>
+<h3>Status</h3>
+<div id="status"></div>
+
+<h3>Your System Prompt</h3>
+<textarea id="output" style="width:100%;min-height:300px;"></textarea>
+
+<script>
+/* -------------------- QUESTIONS -------------------- */
 const questions = [
   "What should I call you?",
   "What industry do you work in?",
   "What is your experience level with AI: casual, business, or advanced?",
   "What is your role at your company?",
   "Do you have direct reports? If yes, how many?",
-  "What is your business domain?"
+  "What is the domain for your business?",
+  "Are you more of an individual contributor or part of a team dynamic?",
+  "What is your preferred communication method with your team?",
+  "What is one part of your job you wish you didn’t have to do?",
+  "Do you currently have an assistant?",
+  "What tone do you prefer when working with me?",
+  "Should I help with personal reminders like birthdays?",
+  "Are you a stakeholder in any other companies?",
+  "Would you like email or calendar integration?",
+  "Do you use a CRM?"
 ];
 
+/* -------------------- STATE -------------------- */
 let index = 0;
-let answers = [];
+const answers = [];
 
-const status = document.getElementById("status");
-const output = document.getElementById("output");
+const statusEl = document.getElementById("status");
+const outputEl = document.getElementById("output");
 
+/* -------------------- VOICE SETUP -------------------- */
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
 if (!SpeechRecognition) {
-  status.textContent = "Speech recognition not supported. Use Chrome desktop.";
+  statusEl.textContent = "Speech recognition not supported. Use Chrome desktop.";
 }
 
 function speak(text) {
   return new Promise(resolve => {
-    const u = new SpeechSynthesisUtterance(text);
-    u.onend = resolve;
-    speechSynthesis.speak(u);
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "en-US";
+    utter.onend = resolve;
+    speechSynthesis.speak(utter);
   });
 }
 
@@ -51,34 +69,54 @@ function listen() {
   return new Promise(resolve => {
     const rec = new SpeechRecognition();
     rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
     rec.onresult = e => resolve(e.results[0][0].transcript);
     rec.onerror = () => resolve("");
     rec.start();
   });
 }
 
+/* -------------------- INTERVIEW FLOW -------------------- */
 async function startInterview() {
-  status.textContent = "Interview started. Allow microphone.";
-  for (; index < questions.length; index++) {
-    await speak(questions[index]);
-    status.textContent = questions[index];
+  statusEl.textContent = "Interview started. Please allow microphone.";
+  await speak("Welcome to Aerlo Exec. Let's get started.");
+
+  while (index < questions.length) {
+    const q = questions[index];
+    statusEl.textContent = q;
+    await speak(q);
     const answer = await listen();
     answers.push(answer);
+    index++;
+
+    if (index % 3 === 0 && index < questions.length) {
+      await speak("Checkpoint saved. Continuing.");
+    }
   }
+
   buildPrompt();
 }
 
 function buildPrompt() {
-  let text = "YOUR SYSTEM PROMPT\n\n";
+  let prompt = "YOUR SYSTEM PROMPT\n\n";
+
   questions.forEach((q, i) => {
-    text += q + "\n" + answers[i] + "\n\n";
+    prompt += q + "\n" + (answers[i] || "") + "\n\n";
   });
-  output.value = text;
+
+  outputEl.value = prompt;
+  statusEl.textContent = "Interview complete.";
   speak("Your system prompt is ready.");
 }
 
+/* -------------------- START BUTTON -------------------- */
 document.getElementById("start").onclick = startInterview;
 </script>
+
+</body>
+</html>
 
 
 </body>
