@@ -17,11 +17,69 @@
   <div id="status" style="margin-top:20px;font-weight:600;"></div>
 
   <script>
-    document.getElementById("start").onclick = () => {
-      document.getElementById("status").textContent =
-        "Page deployed correctly. Voice logic connects next.";
-    };
-  </script>
+const questions = [
+  "What should I call you?",
+  "What industry do you work in?",
+  "What is your experience level with AI: casual, business, or advanced?",
+  "What is your role at your company?",
+  "Do you have direct reports? If yes, how many?",
+  "What is your business domain?"
+];
+
+let index = 0;
+let answers = [];
+
+const status = document.getElementById("status");
+const output = document.getElementById("output");
+
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (!SpeechRecognition) {
+  status.textContent = "Speech recognition not supported. Use Chrome desktop.";
+}
+
+function speak(text) {
+  return new Promise(resolve => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.onend = resolve;
+    speechSynthesis.speak(u);
+  });
+}
+
+function listen() {
+  return new Promise(resolve => {
+    const rec = new SpeechRecognition();
+    rec.lang = "en-US";
+    rec.onresult = e => resolve(e.results[0][0].transcript);
+    rec.onerror = () => resolve("");
+    rec.start();
+  });
+}
+
+async function startInterview() {
+  status.textContent = "Interview started. Allow microphone.";
+  for (; index < questions.length; index++) {
+    await speak(questions[index]);
+    status.textContent = questions[index];
+    const answer = await listen();
+    answers.push(answer);
+  }
+  buildPrompt();
+}
+
+function buildPrompt() {
+  let text = "YOUR SYSTEM PROMPT\n\n";
+  questions.forEach((q, i) => {
+    text += q + "\n" + answers[i] + "\n\n";
+  });
+  output.value = text;
+  speak("Your system prompt is ready.");
+}
+
+document.getElementById("start").onclick = startInterview;
+</script>
+
 
 </body>
 </html>
