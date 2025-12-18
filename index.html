@@ -1,1 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Aerlo Exec Voice Interview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="font-family:system-ui;max-width:900px;margin:40px auto;padding:0 16px;">
+
+  <h1>Aerlo Exec – Voice Interview</h1>
+  <p>Click start to begin the voice interview.</p>
+
+  <button id="start" style="font-size:18px;padding:12px 18px;">
+    Start Voice Interview
+  </button>
+
+  <div id="status" style="margin-top:20px;font-weight:600;"></div>
+
+  <script>
+    document.getElementById("start").onclick = () => {
+      document.getElementById("status").textContent =
+        "Page deployed correctly. Voice logic connects next.";
+    };
+  </script>
+
+</body>
+</html>
 
